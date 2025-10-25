@@ -1,70 +1,52 @@
 class ProductsController < ApplicationController
+  before_action :set_shop
   before_action :set_product, only: %i[ show edit update destroy ]
 
-  # GET /products or /products.json
   def index
-    @products = Product.all
+    @products = @shop.products.order(created_at: :desc)
   end
 
-  # GET /products/1 or /products/1.json
-  def show
-  end
+  def show; end
 
-  # GET /products/new
   def new
-    @product = Product.new
+    @product = @shop.products.new
   end
 
-  # GET /products/1/edit
-  def edit
-  end
+  def edit; end
 
-  # POST /products or /products.json
   def create
-    @product = Product.new(product_params)
-
-    respond_to do |format|
-      if @product.save
-        format.html { redirect_to @product, notice: "Product was successfully created." }
-        format.json { render :show, status: :created, location: @product }
-      else
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @product.errors, status: :unprocessable_entity }
-      end
+    @product = @shop.products.new(product_params)
+    if @product.save
+      redirect_to [@shop, @product], notice: "Product was successfully created."
+    else
+      render :new, status: :unprocessable_entity
     end
   end
 
-  # PATCH/PUT /products/1 or /products/1.json
   def update
-    respond_to do |format|
-      if @product.update(product_params)
-        format.html { redirect_to @product, notice: "Product was successfully updated.", status: :see_other }
-        format.json { render :show, status: :ok, location: @product }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @product.errors, status: :unprocessable_entity }
-      end
+    if @product.update(product_params)
+      redirect_to [@shop, @product], notice: "Product was successfully updated."
+    else
+      render :edit, status: :unprocessable_entity
     end
   end
 
-  # DELETE /products/1 or /products/1.json
   def destroy
-    @product.destroy!
-
-    respond_to do |format|
-      format.html { redirect_to products_path, notice: "Product was successfully destroyed.", status: :see_other }
-      format.json { head :no_content }
-    end
+    @product.destroy
+    redirect_to shop_products_path(@shop), alert: "Product was successfully destroyed."
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_product
-      @product = Product.find(params.expect(:id))
-    end
+  def set_shop
+    @shop = Shop.find(params[:shop_id])
+  end
 
-    # Only allow a list of trusted parameters through.
-    def product_params
-      params.expect(product: [ :title, :price_cents, :description, :stock, :shop_id ])
-    end
+  # 親スコープ経由で取得（URL改ざん防止）
+  def set_product
+    @product = @shop.products.find(params[:id])
+  end
+
+  def product_params
+    params.require(:product).permit(:title, :price_cents, :description, :stock)
+  end
 end
